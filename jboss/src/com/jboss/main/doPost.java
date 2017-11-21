@@ -1,0 +1,48 @@
+package com.jboss.main;
+
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLConnection;
+
+public class doPost {
+
+	public static void DoPost(String url,String filePath,String fileName){
+	    try {
+	        URL realUrl = new URL(url);
+	       
+	        HttpURLConnection conn = (HttpURLConnection) realUrl.openConnection();
+	
+	        conn.setDoInput(true);
+	        conn.setDoOutput(true);
+	        conn.setRequestMethod("POST");
+	        conn.addRequestProperty("FileName", fileName);
+	        conn.setRequestProperty("accept", "*/*");
+	        conn.setRequestProperty("user-agent", "Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1;SV1)");
+	        conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+	        BufferedOutputStream  out=new BufferedOutputStream(conn.getOutputStream());
+	        //读取文件路径
+            File file=new File(filePath);
+            FileInputStream fileInputStream=new FileInputStream(file);
+            byte[]bytes=new byte[1024];
+            int numReadByte=0;
+            while((numReadByte=fileInputStream.read(bytes,0,1024))>0){
+            out.write(bytes, 0, numReadByte);
+        	}
+            out.flush();
+            fileInputStream.close();
+            //写入数据
+            DataInputStream in=new DataInputStream(conn.getInputStream());
+	    } catch (Exception e) {
+	        System.out.println("异常," + e.getMessage());
+//	        e.printStackTrace();
+	    }
+	}
+}

